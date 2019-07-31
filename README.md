@@ -1,7 +1,7 @@
-DEEP Open Catalogue: Image classification
+DEEP Open Catalogue: Speech to Text
 ==============================
 
-[![Build Status](https://jenkins.indigo-datacloud.eu:8080/buildStatus/icon?job=Pipeline-as-code/DEEP-OC-org/speech-to-text-tf/master)](https://jenkins.indigo-datacloud.eu:8080/job/Pipeline-as-code/job/DEEP-OC-org/job/image-classification-tf/job/master/)
+[![Build Status](https://jenkins.indigo-datacloud.eu:8080/buildStatus/icon?job=Pipeline-as-code/DEEP-OC-org/speech-to-text-tf/master)](https://jenkins.indigo-datacloud.eu:8080/job/Pipeline-as-code/job/DEEP-OC-org/job/speech-to-text-tf/job/master/)
 
 
 **Author:** [Lara Lloret Iglesias](https://github.com/laramaktub) (CSIC)
@@ -96,13 +96,11 @@ After training check the  [training notebook](./notebooks/2.0-Model_training.ipy
 
 ### 3. Test the classifier
 
-You can test the classifier on a number of tasks: predict a single local image (or url), predict multiple images (or urls), merge the predictions of a multi-image single observation, etc. All these tasks are explained in the [computing predictions notebook](./notebooks/3.0-Computing_predictions.ipynb).
+You can test the classifier on a number of tasks: predict a single local wav file (or url) or predict multiple wavs (or urls). 
 
-<img src="./reports/figures/predict.png" alt="predict" width="400">
+<img src="./reports/figures/spectrogram.png" alt="predict" width="400">
 
 You can also make and store the predictions of the `test.txt` file (if you provided one). Once you have done that you can visualize the statistics of the predictions like popular metrics (accuracy, recall, precision, f1-score), the confusion matrix, etc by running the [predictions statistics notebook](./notebooks/3.1-Prediction_statistics.ipynb).
-
-By running the [saliency maps notebook](./notebooks/3.2-Saliency_maps.ipynb) you can also visualize the saliency maps of the predicted images, which show what were the most relevant pixels in order to make the prediction.
 
 
 Finally you can launch a simple web page to use the trained classifier to predict audios (both local and urls) on your favorite brownser.
