@@ -1,0 +1,17 @@
+16000
+1000
+30
+30.0
+10.0
+40
+conv
+
+yes,no,up,down,left,right,on,off,stop,go
+16000
+1000
+30
+30.0
+10.0
+40
+conv
+
