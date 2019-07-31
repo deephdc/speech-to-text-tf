@@ -9,6 +9,9 @@ DEEP Open Catalogue: Speech to Text
 **Project:** This work is part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.eu/) project that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 777435.
 
 This is a plug-and-play tool to train and evaluate a speech to text tool using deep neural networks. The network architecture is based in one of the tutorials provided by Tensorflow (https://www.tensorflow.org/tutorials/sequences/audio_recognition).
+The architecture used in this tutorial is based on some described in the paper Convolutional Neural Networks for Small-footprint Keyword Spotting. It was chosen because it's comparatively simple, quick to train, and easy to understand, rather than being state of the art. There are lots of different approaches to building neural network models to work with audio, including recurrent networks or dilated (atrous) convolutions. This tutorial is based on the kind of convolutional network that will feel very familiar to anyone who's worked with image recognition. That may seem surprising at first though, since audio is inherently a one-dimensional continuous signal across time, not a 2D spatial problem. We define a window of time we believe our spoken words should fit into, and converting the audio signal in that window into an image. This is done by grouping the incoming audio samples into short segments, just a few milliseconds long, and calculating the strength of the frequencies across a set of bands. Each set of frequency strengths from a segment is treated as a vector of numbers, and those vectors are arranged in time order to form a two-dimensional array. This array of values can then be treated like a single-channel image, and is known as a spectrogram. An example of what one of these spectrograms looks like:
+<img src="./reports/figures/spectrogram.png" alt="spectrogram" width="400" class="center">
+
 
 To start using this framework run:
 
@@ -98,7 +101,6 @@ After training check the  [training notebook](./notebooks/2.0-Model_training.ipy
 
 You can test the classifier on a number of tasks: predict a single local wav file (or url) or predict multiple wavs (or urls). 
 
-<img src="./reports/figures/spectrogram.png" alt="predict" width="400">
 
 You can also make and store the predictions of the `test.txt` file (if you provided one). Once you have done that you can visualize the statistics of the predictions like popular metrics (accuracy, recall, precision, f1-score), the confusion matrix, etc by running the [predictions statistics notebook](./notebooks/3.1-Prediction_statistics.ipynb).
 
