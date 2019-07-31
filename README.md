@@ -1,5 +1,5 @@
 DEEP Open Catalogue: Speech to Text
-==============================
+====================================
 
 [![Build Status](https://jenkins.indigo-datacloud.eu:8080/buildStatus/icon?job=Pipeline-as-code/DEEP-OC-org/speech-to-text-tf/master)](https://jenkins.indigo-datacloud.eu:8080/job/Pipeline-as-code/job/DEEP-OC-org/job/speech-to-text-tf/job/master/)
 
