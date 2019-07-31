@@ -97,7 +97,9 @@ Before training the classifier you can customize the default parameters of the c
 
 Once you have customized the configuration parameters in the  `./etc/config.yaml` file you can launch the training running `./imgclas/train_runfile.py`. You can monitor the training status using Tensorboard.
 
-After training check the  [training notebook](./notebooks/2.0-Model_training.ipynb) to see how to visualize the training statistics and check the logs where you will be able to find the standard output during the training together with the confusion matrix after the training was finished.
+After training you can check training statistics and check the logs where you will be able to find the standard output during the training together with the confusion matrix after the training was finished.
+
+Since usually this type of models are used in mobile phone application, the training generates the model in .pb format allowing to use it easily to perfom inference from a mobile phone app.
 
 ### 3. Test the classifier
 
