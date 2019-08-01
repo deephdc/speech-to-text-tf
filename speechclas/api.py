@@ -81,6 +81,7 @@ def load_inference_model():
         paths.timestamp = TIMESTAMP
         print('Using TIMESTAMP={}'.format(TIMESTAMP))
 
+
         # Set the checkpoint model to use to make the prediction
         ckpts = os.listdir(paths.get_checkpoints_dir())
         if not ckpts:
