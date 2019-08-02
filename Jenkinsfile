@@ -2,122 +2,114 @@
 
 @Library(['github.com/indigo-dc/jenkins-pipeline-library@1.2.3']) _
 
+def job_result_url = ''
+
 pipeline {
     agent {
-        label 'docker-build'
+        label 'python'
     }
 
     environment {
-        dockerhub_repo = "deephdc/deep-oc-speech-to-text-tf"
-        tf_ver = "1.12.0"
-        py_ver = "py3"
+        author_name = "Ignacio Heredia (CSIC)"
+        author_email = "iheredia@ifca.unican.es"
+        app_name = "image-classification-tf"
+        job_location = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-image-classification-tf/master"
+        job_location_test = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-image-classification-tf/test"     
     }
 
     stages {
-        stage('Validate metadata') {
+        stage('Code fetching') {
             steps {
                 checkout scm
-                sh 'deep-app-schema-validator metadata.json'
             }
         }
 
-        stage('Docker image building') {
-            when {
-                anyOf {
-                    branch 'master'
-                    branch 'test'
-                    buildingTag()
-                }
-            }
-            steps{
-                checkout scm
-                script {
-                    id = "${env.dockerhub_repo}"
-                    
-                    if (env.BRANCH_NAME == 'master') {
-                        // CPU
-                        id_cpu = DockerBuild(
-                            id,
-                            tag: ['latest', 'cpu'],
-                            build_args: [
-                                "tag=${env.tf_ver}",
-                                "pyVer=${env.py_ver}",
-                                "branch=master"
-                            ]
-                        )
-                        // GPU
-                        id_gpu = DockerBuild(
-                            id,
-                            tag: ['gpu'],
-                            build_args: [
-                                "tag=${env.tf_ver}-gpu",
-                                "pyVer=${env.py_ver}",
-                                "branch=master"
-                            ]                            
-                        )
-                    }
-                    if (env.BRANCH_NAME == 'test') {
-                        // CPU
-                        id_cpu = DockerBuild(
-                            id,
-                            tag: ['test', 'cpu-test'],
-                            build_args: [
-                                "tag=${env.tf_ver}",
-                                "pyVer=${env.py_ver}",
-                                "branch=test"
-                            ]
-                        )
-                        // GPU
-                        id_gpu = DockerBuild(
-                            id,
-                            tag: ['gpu-test'],
-                            build_args: [
-                                "tag=${env.tf_ver}-gpu",
-                                "pyVer=${env.py_ver}",
-                                "branch=test"
-                            ]                            
-                        )
-                    }
-                }
-            }
-        }
-
-        stage('Docker Hub delivery') {
-            when {
-                anyOf {
-                    branch 'master'
-                    branch 'test'
-                    buildingTag()
-                }
-            }
+        stage('Style analysis: PEP8') {
             steps {
-                script {
-                    DockerPush(id_cpu)
-                    DockerPush(id_gpu)
-                }
+                ToxEnvRun('pep8')
             }
             post {
-                failure {
-                    DockerClean()
-                }
                 always {
-                    cleanWs()
+                    warnings canComputeNew: false,
+                             canResolveRelativePaths: false,
+                             defaultEncoding: '',
+                             excludePattern: '',
+                             healthy: '',
+                             includePattern: '',
+                             messagesPattern: '',
+                             parserConfigurations: [[parserName: 'PYLint', pattern: '**/flake8.log']],
+                             unHealthy: ''
+                    //WarningsReport('PYLint') // 'Flake8' fails..., consoleParsers does not produce any report...
                 }
             }
         }
 
-        stage("Render metadata on the marketplace") {
-            when {
-                allOf {
-                    branch 'master'
-                    changeset 'metadata.json'
+        stage('Security scanner') {
+            steps {
+                ToxEnvRun('bandit-report')
+                script {
+                    if (currentBuild.result == 'FAILURE') {
+                        currentBuild.result = 'UNSTABLE'
+                    }
+               }
+            }
+            post {
+               always {
+                    HTMLReport("/tmp/bandit", 'index.html', 'Bandit report')
                 }
+            }
+        }
+        
+
+        stage("Re-build DEEP-OC-image-classification-tf Docker images") {
+              when {
+                anyOf {
+                   branch 'master'
+                   branch 'test'
+                   buildingTag()
+               }
             }
             steps {
                 script {
-                    def job_result = JenkinsBuildJob("Pipeline-as-code/deephdc.github.io/pelican")
+                    job_to_build = "${env.job_location}"
+                    if (env.BRANCH_NAME == 'test') {
+                       job_to_build = "${env.job_location_test}"
+                    }
+                    def job_result = JenkinsBuildJob(job_to_build)
                     job_result_url = job_result.absoluteUrl
                 }
+            }
+        }
+    }
+
+    post {
+        failure {
+            script {
+                currentBuild.result = 'FAILURE'
+            }
+        }
+
+        always  {
+            script { //stage("Email notification")
+                def build_status =  currentBuild.result
+                build_status =  build_status ?: 'SUCCESS'
+                def subject = """
+New ${app_name} build in Jenkins@DEEP:\
+${build_status}: Job '${env.JOB_NAME}\
+[${env.BUILD_NUMBER}]'"""
+
+                def body = """
+Dear ${author_name},\n\n
+A new build of '${app_name} DEEP application is available in Jenkins at:\n\n
+*  ${env.BUILD_URL}\n\n
+terminated with '${build_status}' status.\n\n
+Check console output at:\n\n
+*  ${env.BUILD_URL}/console\n\n
+and resultant Docker image rebuilding job at (may be empty in case of FAILURE):\n\n
+*  ${job_result_url}\n\n
+DEEP Jenkins CI service"""
+
+                EmailSend(subject, body, "${author_email}")
             }
         }
     }
