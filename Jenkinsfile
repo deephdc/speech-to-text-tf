@@ -10,11 +10,11 @@ pipeline {
     }
 
     environment {
-        author_name = "Ignacio Heredia (CSIC)"
-        author_email = "iheredia@ifca.unican.es"
-        app_name = "image-classification-tf"
-        job_location = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-image-classification-tf/master"
-        job_location_test = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-image-classification-tf/test"     
+        author_name = "Lara Lloret Iglesias (CSIC)"
+        author_email = "lloret@ifca.unican.es"
+        app_name = "speech-to-text-tf"
+        job_location = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-speech-to-text-tf/master"
+        job_location_test = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-speech-to-text-tf/test"     
     }
 
     stages {
@@ -61,7 +61,7 @@ pipeline {
         }
         
 
-        stage("Re-build DEEP-OC-image-classification-tf Docker images") {
+        stage("Re-build DEEP-OC-speech-to-text-tf Docker images") {
               when {
                 anyOf {
                    branch 'master'
