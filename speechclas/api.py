@@ -19,25 +19,22 @@ gevent, uwsgi.
 
 import json
 import os
-import tempfile
-import warnings
 from datetime import datetime
 import pkg_resources
 import builtins
 import re
-import urllib.request
+from collections import OrderedDict
 
-import numpy as np
+import urllib.request
 import requests
-from werkzeug.exceptions import BadRequest
-import tensorflow as tf
-from tensorflow.keras.models import load_model
 from tensorflow.keras import backend as K
+from webargs import fields
+from aiohttp.web import HTTPBadRequest
 
 from speechclas import paths, utils, config, label_wav
-from speechclas.data_utils import load_class_names, load_class_info, mount_nextcloud
-from speechclas.test_utils import predict
+from speechclas.data_utils import mount_nextcloud
 from speechclas.train_runfile import train_fn
+
 
 # Mount NextCloud folders (if NextCloud is available)
 try:
@@ -70,9 +67,9 @@ def load_inference_model():
     # Set the timestamp
     timestamps = next(os.walk(paths.get_models_dir()))[1]
     if not timestamps:
-        raise BadRequest(
-            """You have no models in your `./models` folder to be used for inference.
-            Therefore the API can only be used for training.""")
+        raise Exception(
+            "You have no models in your `./models` folder to be used for inference. "
+            "This module does not come with a pretrained model so you have to train a model to use it for prediction.")
     else:
         if 'api' in timestamps:
             TIMESTAMP = 'api'
@@ -81,13 +78,13 @@ def load_inference_model():
         paths.timestamp = TIMESTAMP
         print('Using TIMESTAMP={}'.format(TIMESTAMP))
 
-
         # Set the checkpoint model to use to make the prediction
         ckpts = os.listdir(paths.get_checkpoints_dir())
         if not ckpts:
-            raise BadRequest(
-                """You have no checkpoints in your `./models/{}/ckpts` folder to be used for inference.
-                Therefore the API can only be used for training.""".format(TIMESTAMP))
+            raise Exception(
+                "You have no checkpoints in your `./models/{}/ckpts` folder to be used for inference. ".format(
+                    TIMESTAMP) +
+                "Therefore the API can only be used for training.")
         else:
             if 'model.pb' in ckpts:
                 MODEL_NAME = 'model.pb'
@@ -101,24 +98,42 @@ def load_inference_model():
                 LABELS_FILE = sorted([name for name in ckpts if name.endswith('*.txt')])[-1]
             print('Using LABELS_FILE={}'.format(LABELS_FILE))
 
-
             # Clear the previous loaded model
             K.clear_session()
 
             # Load the class names and info
             ckpts_dir = paths.get_checkpoints_dir()
-            MODEL_NAME=  os.path.join(ckpts_dir, MODEL_NAME )
-            LABELS_FILE=  os.path.join(ckpts_dir, LABELS_FILE )
-            
+            MODEL_NAME = os.path.join(ckpts_dir, MODEL_NAME )
+            LABELS_FILE = os.path.join(ckpts_dir, LABELS_FILE )
 
             # Load training configuration
             conf_path = os.path.join(paths.get_conf_dir(), 'conf.json')
             with open(conf_path) as f:
                 conf = json.load(f)
 
-
     # Set the model as loaded
     loaded = True
+
+
+def update_with_query_conf(user_args):
+    """
+    Update the default YAML configuration with the user's input args from the API query
+    """
+    # Update the default conf with the user input
+    CONF = config.CONF
+    for group, val in sorted(CONF.items()):
+        for g_key, g_val in sorted(val.items()):
+            if g_key in user_args:
+                g_val['value'] = json.loads(user_args[g_key])
+
+    # Check and save the configuration
+    config.check_conf(conf=CONF)
+    config.conf_dict = config.get_conf_dict(conf=CONF)
+
+
+def warm():
+    if not loaded:
+        load_inference_model()
 
 
 def catch_error(f):
@@ -126,7 +141,7 @@ def catch_error(f):
         try:
             return f(*args, **kwargs)
         except Exception as e:
-            raise e
+            raise HTTPBadRequest(reason=e)
     return wrap
 
 
@@ -135,93 +150,92 @@ def catch_url_error(url_list):
     url_list=url_list['urls']
     # Error catch: Empty query
     if not url_list:
-        raise BadRequest('Empty query')
+        raise ValueError('Empty query')
 
     for i in url_list:
         # Error catch: Inexistent url
         try:
             url_type = requests.head(i).headers.get('content-type')
         except:
-            raise BadRequest("""Failed url connection:
-            Check you wrote the url address correctly.""")
+            raise ValueError("Failed url connection: "
+                             "Check you wrote the url address correctly.")
 
         # Error catch: Wrong formatted urls
         if url_type != 'audio/x-wav':
-            raise BadRequest("""Url wav format error:
-            Some urls were not in wav format.""")
+            raise ValueError("Url wav format error: "
+                             "Some urls were not in wav format.")
 
 
 def catch_localfile_error(file_list):
 
     # Error catch: Empty query
     if not file_list[0].filename:
-        raise BadRequest('Empty query')
-
-    # Error catch: Image format error
-    for f in file_list:
-        extension = f.split('.')[-1]
-        if extension not in allowed_extensions:
-            raise BadRequest("""Local image format error:
-            At least one file is not in a standard image format (jpg|jpeg|png).""")
+        raise ValueError('Empty query')
 
 
 @catch_error
-def predict_url(urls, merge=True):
+def predict(**args):
+
+    if (not any([args['urls'], args['files']]) or
+            all([args['urls'], args['files']])):
+        raise Exception("You must provide either 'url' or 'data' in the payload")
+
+    if args['files']:
+        args['files'] = [args['files']]  # patch until list is available
+        return predict_data(args)
+    elif args['urls']:
+        args['urls'] = [args['urls']]  # patch until list is available
+        return predict_url(args)
+
+
+def predict_url(args):
     """
     Function to predict an url
     """
-    catch_url_error(urls)
+    # # Check user configuration
+    # update_with_query_conf(args)
+    # conf = config.conf_dict
 
+    catch_url_error(args['urls'])
+
+    # Load model if needed
     if not loaded:
         load_inference_model()
-    urllib.request.urlretrieve(urls['urls'][0], '/tmp/file.wav')
-    pred_lab, pred_prob =label_wav.predict('/tmp/file.wav', LABELS_FILE, MODEL_NAME, "wav_data:0","labels_softmax:0", 3)
-    return format_prediction(pred_lab, pred_prob)
 
-
-
-@catch_error
-def predict_file(filenames, merge=True):
-    """
-    Function to predict a local image
-    """
-    catch_localfile_error(filenames)
-
-    if not loaded:
-        load_inference_model()
-    with graph.as_default():
-        pred_lab, pred_prob = predict(model=model,
-                                      X=filenames,
-                                      conf=conf,
-                                      top_K=top_K,
-                                      filemode='local',
-                                      merge=merge)
-
-    if merge:
-        pred_lab, pred_prob = np.squeeze(pred_lab), np.squeeze(pred_prob)
+    # Download the url
+    urllib.request.urlretrieve(args['urls'][0], '/tmp/file.wav')
+    pred_lab, pred_prob = label_wav.predict('/tmp/file.wav',
+                                            LABELS_FILE,
+                                            MODEL_NAME,
+                                            "wav_data:0",
+                                            "labels_softmax:0",
+                                            3)
 
     return format_prediction(pred_lab, pred_prob)
 
 
-@catch_error
-def predict_data(audios, merge=True):
+def predict_data(args):
     """
     Function to predict an audio file
     """
+    # # Check user configuration
+    # update_with_query_conf(args)
+    # conf = config.conf_dict
+
     if not loaded:
         load_inference_model()
-    if not isinstance(audios, list):
-        audios = [audios]
-    filenames = []
-    for audio in audios:
 
-        thename=audio['files'].filename
-        thefile="/tmp/"+thename
-        audio['files'].save(thefile)
+    # Create a list with the path to the audios
+    filenames = [f.filename for f in args['files']]
 
-    pred_lab, pred_prob =label_wav.predict(thefile, LABELS_FILE, MODEL_NAME, "wav_data:0","labels_softmax:0", 3)
+    pred_lab, pred_prob = label_wav.predict(filenames[0],
+                                            LABELS_FILE,
+                                            MODEL_NAME,
+                                            "wav_data:0",
+                                            "labels_softmax:0",
+                                            3)
+
     return format_prediction(pred_lab, pred_prob)
-
 
 
 def format_prediction(labels, probabilities):
@@ -229,7 +243,7 @@ def format_prediction(labels, probabilities):
         "status": "ok",
          "predictions": [],
     }
-    class_names=conf["model_settings"]["wanted_words"]
+    class_names = conf["model_settings"]["wanted_words"]
     for label_id, prob in zip(labels, probabilities):
         name = label_id
 
@@ -261,44 +275,15 @@ def wikipedia_link(pred_lab):
     return link
 
 
-def metadata():
-    d = {
-        "author": None,
-        "description": None,
-        "url": None,
-        "license": None,
-        "version": None,
-    }
-    return d
-
-
-@catch_error
-def train(user_conf):
+def train(**args):
     """
-    Parameters
-    ----------
-    user_conf : dict
-        Json dict (created with json.dumps) with the user's configuration parameters that will replace the defaults.
-        Must be loaded with json.loads()
-        For example:
-            user_conf={'num_classes': 'null', 'lr_step_decay': '0.1', 'lr_step_schedule': '[0.7, 0.9]', 'use_early_stopping': 'false'}
+    Train an image classifier
     """
-    CONF = config.CONF
-
-    # Update the conf with the user input
-    for group, val in sorted(CONF.items()):
-        for g_key, g_val in sorted(val.items()):
-            g_val['value'] = json.loads(user_conf[g_key])
-
-    # Check the configuration
-    try:
-        config.check_conf(conf=CONF)
-    except Exception as e:
-        raise BadRequest(e)
-
-    CONF = config.conf_dict(conf=CONF)
+    # print('#####################')
+    # raise Exception('error')
+    update_with_query_conf(user_args=args)
+    CONF = config.conf_dict
     timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
-
     config.print_conf_table(CONF)
     K.clear_session() # remove the model loaded for prediction
     train_fn(TIMESTAMP=timestamp, CONF=CONF)
@@ -310,21 +295,10 @@ def train(user_conf):
         print(e)    
 
 
-@catch_error
-def get_train_args():
+def populate_parser(parser, default_conf):
     """
-    Returns a dict of dicts with the following structure to feed the deepaas API parser:
-    { 'arg1' : {'default': '1',     #value must be a string (use json.dumps to convert Python objects)
-                'help': '',         #can be an empty string
-                'required': False   #bool
-                },
-      'arg2' : {...
-                },
-    ...
-    }
+    Returns a arg-parse like parser.
     """
-    train_args = {}
-    default_conf = config.CONF
     for group, val in default_conf.items():
         for g_key, g_val in val.items():
             gg_keys = g_val.keys()
@@ -335,29 +309,67 @@ def get_train_args():
             choices = g_val['choices'] if ('choices' in gg_keys) else None
 
             # Additional info in help string
-            help += '\n' + "Group name: **{}**".format(str(group))
-            if choices: help += '\n' + "Choices: {}".format(str(choices))
-            if type: help += '\n' + "Type: {}".format(g_val['type'])
+            help += '\n' + "<font color='#C5576B'> Group name: **{}**".format(str(group))
+            if choices:
+                help += '\n' + "Choices: {}".format(str(choices))
+            if type:
+                help += '\n' + "Type: {}".format(g_val['type'])
+            help += "</font>"
 
-            opt_args = {'default': json.dumps(g_val['value']),
-                        'help': help,
-                        'required': False}
-            # if type: opt_args['type'] = type # this breaks the submission because the json-dumping
-            #                                     => I'll type-check args inside the train_fn
+            # Create arg dict
+            opt_args = {'missing': json.dumps(g_val['value']),
+                        'description': help,
+                        'required': False,
+                        }
+            if choices:
+                opt_args['enum'] = [json.dumps(i) for i in choices]
 
-            train_args[g_key] = opt_args
-    return train_args
+            parser[g_key] = fields.Str(**opt_args)
+
+    return parser
+
+
+def get_train_args():
+
+    parser = OrderedDict()
+    default_conf = config.CONF
+    default_conf = OrderedDict([('general', default_conf['general']),
+                                ('model_settings', default_conf['model_settings']),
+                                ('audio_processor', default_conf['audio_processor']),
+                                ('training_parameters', default_conf['training_parameters'])])
+
+    return populate_parser(parser, default_conf)
+
+
+def get_predict_args():
+
+    parser = OrderedDict()
+
+    # Add data and url fields
+    parser['files'] = fields.Field(required=False,
+                                   missing=None,
+                                   type="file",
+                                   data_key="data",
+                                   location="form",
+                                   description="Select the image you want to classify.")
+
+    # Use field.String instead of field.Url because I also want to allow uploading of base 64 encoded data strings
+    parser['urls'] = fields.String(required=False,
+                                   missing=None,
+                                   description="Select an URL of the image you want to classify.")
+
+    # missing action="append" --> append more than one url
+
+    return parser
 
 
 @catch_error
-def get_metadata():
+def get_metadata(distribution_name='speechclas'):
     """
     Function to read metadata
     """
 
-    module = __name__.split('.', 1)
-
-    pkg = pkg_resources.get_distribution(module[0])
+    pkg = pkg_resources.get_distribution(distribution_name)
     meta = {
         'Name': None,
         'Version': None,

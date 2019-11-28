@@ -51,7 +51,7 @@ from tensorflow.contrib.framework.python.ops import audio_ops as contrib_audio
 from speechclas import input_data, models, paths
 from tensorflow.python.framework import graph_util
 
-CONF = config.conf_dict()
+CONF = config.get_conf_dict()
 timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
 
 def create_inference_graph(wanted_words, sample_rate, clip_duration_ms,

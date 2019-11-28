@@ -95,7 +95,7 @@ Please use wav files.
 
 Before training the classifier you can customize the default parameters of the configuration file. To have an idea of what parameters you can change, you can explore them using the [dataset exploration notebook](./notebooks/1.0-Dataset_exploration.ipynb). This step is optional and training can be launched with the default configurarion parameters and still offer reasonably good results.
 
-Once you have customized the configuration parameters in the  `./etc/config.yaml` file you can launch the training running `./imgclas/train_runfile.py`. You can monitor the training status using Tensorboard.
+Once you have customized the configuration parameters in the  `./etc/config.yaml` file you can launch the training running `./speechclas/train_runfile.py`. You can monitor the training status using Tensorboard.
 
 After training you can check training statistics and check the logs where you will be able to find the standard output during the training together with the confusion matrix after the training was finished.
 

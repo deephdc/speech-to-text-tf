@@ -84,7 +84,7 @@ from tensorflow.python.platform import gfile
 from speechclas import paths, config, input_data, models, freeze, utils, model_utils
 from tensorflow.python.framework import graph_util
 
-CONF = config.conf_dict()
+CONF = config.get_conf_dict()
 timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
 
 
@@ -98,7 +98,6 @@ def train_fn(TIMESTAMP, CONF):
   utils.create_dir_tree()
   #Activate only if you want to make a backup of the splits used for the training
   #utils.backup_splits()
-  
 #  logging.set_verbosity(logging.INFO)
   logging.basicConfig(filename=paths.get_logs_dir()+'/train_info.log',level=logging.DEBUG)
 
@@ -203,6 +202,7 @@ def train_fn(TIMESTAMP, CONF):
     f.write('\n'.join(audio_processor.words_list))
 
   # Training loop.
+  print('Start training ...')
   training_steps_max = np.sum(training_steps_list)
   for training_step in xrange(start_step, training_steps_max + 1):
     # Figure out what the current learning rate is.
