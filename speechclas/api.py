@@ -131,9 +131,10 @@ def update_with_query_conf(user_args):
     config.conf_dict = config.get_conf_dict(conf=CONF)
 
 
-def warm():
-    if not loaded:
-        load_inference_model()
+# Disable warm because the model does not come with any pretrained model
+# def warm():
+#     if not loaded:
+#         load_inference_model()
 
 
 def catch_error(f):
