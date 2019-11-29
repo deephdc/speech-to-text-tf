@@ -14,7 +14,7 @@ This is a plug-and-play tool to train and evaluate a speech to text tool using d
 
 The architecture used in this tutorial is based on some described in the paper [Convolutional Neural Networks for Small-footprint Keyword Spotting](https://static.googleusercontent.com/media/research.google.com/es//pubs/archive/43969.pdf). It was chosen because it's comparatively simple, quick to train, and easy to understand, rather than being state of the art. There are lots of different approaches to building neural network models to work with audio, including recurrent networks or dilated (atrous) convolutions. This tutorial is based on the kind of convolutional network that will feel very familiar to anyone who's worked with image recognition. That may seem surprising at first though, since audio is inherently a one-dimensional continuous signal across time, not a 2D spatial problem. We define a window of time we believe our spoken words should fit into, and converting the audio signal in that window into an image. This is done by grouping the incoming audio samples into short segments, just a few milliseconds long, and calculating the strength of the frequencies across a set of bands. Each set of frequency strengths from a segment is treated as a vector of numbers, and those vectors are arranged in time order to form a two-dimensional array. This array of values can then be treated like a single-channel image, and is known as a spectrogram. An example of what one of these spectrograms looks like:
 
-<p align="center"> <img src="./reports/figures/spectrogram.png"> </p>
+<p align="center"> <img src="./reports/figures/spectrogram.png" width="400"> </p>
 
 To start using this framework run:
 
