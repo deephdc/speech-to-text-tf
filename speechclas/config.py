@@ -46,12 +46,11 @@ def check_conf(conf=CONF):
                 if (g_val['range'][1] != 'None') and (g_val['range'][1] < g_val['value']):
                     raise ValueError('The selected value for {} is higher than the maximal possible value.'.format(g_key))
 
-                    
-
 
 check_conf()
 
-def conf_dict(conf=CONF):
+
+def get_conf_dict(conf=CONF):
     """
     Return configuration as dict
     """
@@ -62,7 +61,9 @@ def conf_dict(conf=CONF):
             conf_d[group][g_key] = g_val['value']
     return conf_d
 
-conf_d = conf_dict()
+
+conf_dict = get_conf_dict()
+
 
 def print_full_conf(conf=CONF):
     """
@@ -84,7 +85,7 @@ def print_full_conf(conf=CONF):
             print('\n')
 
             
-def print_conf_table(conf=conf_d):
+def print_conf_table(conf=conf_dict):
     """
     Print configuration parameters in a table
     """

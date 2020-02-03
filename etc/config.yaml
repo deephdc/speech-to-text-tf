@@ -24,7 +24,6 @@ general:
           directory.
           If path is relative it will be appended to the package path.
 
-
   data_dir:
     value: "data/dataset_files"
     type: "str"
@@ -38,9 +37,7 @@ general:
           You can indicate here the URL to the tar.gz containing your training audio files
 
 
-
 model_settings:
-
 
   wanted_words:
     type: "str"
@@ -104,7 +101,6 @@ audio_processor:
     help: >
           Range to randomly shift the training audio by in time
 
-
   sample_rate:
     type: "int"
     value: 16000
@@ -144,13 +140,11 @@ training_parameters:
     help: >
           Save model checkpoint every save_steps
 
-
   output_file:
     type: "str"
     value: "model.pb"
     help: >
           Model file in pb format
-
 
   model_architecture:
     type: "str"
@@ -193,7 +187,6 @@ training_parameters:
     value: ""
     help: >
           If specified, restore this pretrained model before any training
-
 
   how_many_training_steps:
     type: "str"
