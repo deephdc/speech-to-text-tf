@@ -137,13 +137,13 @@ def update_with_query_conf(user_args):
 #         load_inference_model()
 
 
-def catch_error(f):
-    def wrap(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except Exception as e:
-            raise HTTPBadRequest(reason=e)
-    return wrap
+# def catch_error(f):
+#     def wrap(*args, **kwargs):
+#         try:
+#             return f(*args, **kwargs)
+#         except Exception as e:
+#             raise HTTPBadRequest(reason=e)
+#     return wrap
 
 
 def catch_url_error(url_list):
@@ -174,7 +174,7 @@ def catch_localfile_error(file_list):
         raise ValueError('Empty query')
 
 
-@catch_error
+# @catch_error
 def predict(**args):
 
     if (not any([args['urls'], args['files']]) or
@@ -280,8 +280,6 @@ def train(**args):
     """
     Train an image classifier
     """
-    # print('#####################')
-    # raise Exception('error')
     update_with_query_conf(user_args=args)
     CONF = config.conf_dict
     timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
@@ -364,7 +362,6 @@ def get_predict_args():
     return parser
 
 
-@catch_error
 def get_metadata(distribution_name='speechclas'):
     """
     Function to read metadata
