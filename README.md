@@ -11,6 +11,18 @@ received funding from the European Union’s Horizon 2020 research and innovatio
 
 This is a plug-and-play tool to train and evaluate a speech to text tool using deep neural networks.
 
+You can find more information about it in the [DEEP Marketplace](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-satsr.html).
+
+**Table of contents**
+1. [Installing this module](#installing-this-module)
+    1. [Local installation](#local-installation)
+    2. [Docker installation](#docker-installation)
+2. [Train a speech classifier](#train-a-speech-classifier)
+    1. [Data preprocessing](#data-preprocessing)
+    2. [Train the classifier](#train-the-classifier)
+3. [Predict](#predict)
+4. [Acknowledgements](#acknowledgments)
+
 <p align="center"> <img src="./reports/figures/speech-to-text.png"> </p>
 
 
@@ -53,7 +65,7 @@ Now open http://0.0.0.0:5000/ui and look for the methods belonging to the `speec
 
 ## Train a speech classifier
 
-### 1. Data preprocessing
+### Data preprocessing
 
 The first step to train your speech to text neural network is to put your `.wav` files into folders.
 The name of each folder should correspond to the label for those particular audios.  
@@ -63,7 +75,7 @@ Alternatively you provide an URL with the location of the `tar.gz` containing al
 This will automatically download the `tar.gz`, read the labels and get everything ready to start the training. 
 
 
-### 2. Train the classifier
+### Train the classifier
 
 Go to http://0.0.0.0:5000/ui and look for the ``TRAIN`` POST method. Click on 'Try it out', change whatever training args
 you want and click 'Execute'. The training will be launched and you will be able to follow its status by executing the 
@@ -79,7 +91,7 @@ Since usually this type of models are used in mobile phone application, the trai
 allowing to use it easily to perform inference from a mobile phone app.
 
 
-## Test the classifier
+## Predict
 
 > **Note**
 >
@@ -113,3 +125,7 @@ and those vectors are arranged in time order to form a two-dimensional array. Th
 like a single-channel image, and is known as a spectrogram. An example of what one of these spectrograms looks like:
 
 <p align="center"> <img src="./reports/figures/spectrogram.png" width="400"> </p>
+
+If you consider this project to be useful, please consider citing the DEEP Hybrid DataCloud project:
+
+> García, Álvaro López, et al. [A Cloud-Based Framework for Machine Learning Workloads and Applications.](https://ieeexplore.ieee.org/abstract/document/8950411/authors) IEEE Access 8 (2020): 18681-18692. 
