@@ -1,3 +1,8 @@
+---
+# The Repository is ARCHIVED!
+### it is moved to https://github.com/ai4os-hub/ai4os-speech-to-text-tf
+---
+
 DEEP Open Catalogue: Speech to Text
 ====================================
 
